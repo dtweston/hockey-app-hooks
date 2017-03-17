@@ -12,14 +12,10 @@ Setup
 
 1. Clone the repo
 2. `swift build`
-3. `./.build/debug/HockeyAppHooks` Default port is 8080
-4. In another terminal... `ngrok 8080`.
+3. Edit the `config.plist` file (in the root of the repo) to add `HockeyToken` and `YammerToken`.
+4. Run `./.build/debug/HockeyAppHooks`
+5. The app looks for `config.plist` in the current directory.
+4. In another terminal... `ngrok [ListenPort]`.
 5. Add the webhook to HockeyApp.
 6. Test the webhook by sending a 'PING'.
 
-TODO
-----
-
-- add configuration for Yammer posting (access token, group, cc's)
-- support the other hooks
-- keep track of crash groups, instead of always creating a new thread starter
