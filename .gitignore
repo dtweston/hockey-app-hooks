@@ -63,6 +63,5 @@ fastlane/report.xml
 fastlane/screenshots
 
 Packages/
-PerfectTemplate.xcodeproj
-Tests/
+HockeyAppHooks.xcodeproj
 webroot/
