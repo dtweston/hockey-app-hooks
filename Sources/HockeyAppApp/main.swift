@@ -6,6 +6,8 @@ import HeliumLogger
 import LoggerAPI
 
 let logger = HeliumLogger(.entry)
+logger.format = "[(%date)] [(%type)] (%msg) [(%file):(%line) (%func)]"
+
 Log.logger = logger
 
 let router = Router()
