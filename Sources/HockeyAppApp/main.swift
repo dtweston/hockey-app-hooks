@@ -18,9 +18,9 @@ let configPlist = NSDictionary(contentsOfFile: configPath)
 let router = Router()
 router.all("/webhook", middleware: BodyParser())
 
-guard let hockeyToken = configPlist?["HockeyToken"] as? String,
-    let yammerToken = configPlist?["YammerToken"] as? String,
-    let yammerGroupId = configPlist?["YammerGroupId"] as? Int else {
+guard let hockeyToken = configPlist?["HockeyToken"] as? String, !hockeyToken.isEmpty,
+    let yammerToken = configPlist?["YammerToken"] as? String, !yammerToken.isEmpty,
+    let yammerGroupId = configPlist?["YammerGroupId"] as? Int, yammerGroupId != 0 else {
     Log.error("You must specify HockeyToken, YammerToken AND YammerGroupId parameters in config!")
     exit(-15)
 }
