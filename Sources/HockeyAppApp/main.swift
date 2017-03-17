@@ -57,6 +57,8 @@ router.post("/webhook") {
 //    }
 //}
 
-Kitura.addHTTPServer(onPort:8080, with: router)
+let port = 8080
+Log.info("Starting server on port \(port)")
+Kitura.addHTTPServer(onPort:port, with: router)
 
 Kitura.run()

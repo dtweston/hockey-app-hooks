@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftyJSON
+import LoggerAPI
 
 extension Message {
     var feedbackInfo: String {
@@ -54,9 +55,10 @@ public class HookHandler {
         let info = hookParser.parse(json)
         switch info {
         case .feedback(let fi):
+            Log.info("Received new feedback via webhook")
             handle(feedbackInfo: fi)
         case .failed(let type, _), .unparsed(let type, _):
-            print("Unknown webhook type (\(type)) received")
+            Log.warning("Unknown webhook type (\(type)) received")
         }
     }
 
@@ -71,22 +73,24 @@ public class HookHandler {
             var pendingAttachmentID: Int? = nil
 
             let group = DispatchGroup()
+            Log.debug("Checking for image attachments")
             if let screenshot = message.attachments.first(where: { $0.contentType.hasPrefix("image/") }) {
 
                 group.enter()
+                Log.info("Fetching attachment")
                 hockey.fetchAttachment(appId: message.appId, feedbackId: feedbackInfo.feedback.id, attachmentId: screenshot.id, completion: { data, error in
 
                     if let error = error {
-                        print("Unable to fetch screenshot: \(error)")
+                        Log.error("Unable to fetch screenshot: \(error)")
                     } else if let data = data {
                         group.enter()
                         self.yammer.uploadScreenshot(data: data, groupId: 9962571) { json, error in
                             if let id = json?["id"].int {
-                                print("Received pending attachment id: \(id)")
+                                Log.debug("Received pending attachment id: \(id)")
                                 pendingAttachmentID = id
                             }
                             else {
-                                print("Error uploading sreenshot: \(error)")
+                                Log.error("Error uploading sreenshot: \(error)")
                             }
 
                             group.leave()
@@ -99,6 +103,7 @@ public class HookHandler {
 
             var appInfo = ""
             group.enter()
+            Log.info("Fetching app version \(message.appId)/\(message.appVersionId)")
             hockey.appVersion(appId: message.appId, versionId: message.appVersionId) { appVersion in
 
                 appInfo = {

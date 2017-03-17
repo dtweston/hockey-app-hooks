@@ -1,5 +1,6 @@
 import SwiftyJSON
 import Foundation
+import LoggerAPI
 
 struct PingInfo {
     var id: String
@@ -83,7 +84,7 @@ public class WebhookParser {
             return Attachment(id: id, contentType: contentType, fileName: fileName)
         }
 
-        print("Invalid attachment JSON: \(String(describing: json))")
+        Log.error("Invalid attachment JSON: \(String(describing: json))")
         return nil
     }
 
@@ -113,7 +114,7 @@ public class WebhookParser {
             return Message(id: id, subject: subject, text: text, cleanText: cleanText, oem: oem, model: model, osVersion: osVersion, appId: appId, appVersionId: appVersionId, name: name, email: email, attachments: attachments)
         }
 
-        print("Invalid message JSON: \(String(describing: json))")
+        Log.error("Invalid message JSON: \(String(describing: json))")
         return nil
     }
 
@@ -136,7 +137,7 @@ public class WebhookParser {
             return Feedback(name: name, email: email, id: id, messages: messages, status: status)
         }
 
-        print("Invalid feedback JSON: \(String(describing: json))")
+        Log.error("Invalid feedback JSON: \(String(describing: json))")
         return nil
     }
 
@@ -151,7 +152,7 @@ public class WebhookParser {
             }
         }
 
-        print("Invalid feedback info JSON: \(String(describing: json))")
+        Log.error("Invalid feedback info JSON: \(String(describing: json))")
         return nil
     }
 }

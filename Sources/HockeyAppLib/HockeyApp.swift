@@ -2,6 +2,7 @@ import KituraRequest
 import SwiftyJSON
 import Dispatch
 import Foundation
+import LoggerAPI
 
 public struct HockeyApp {
     public enum ReleaseType {
@@ -73,7 +74,7 @@ public class HockeyParser {
             return HockeyApp(title: title, bundleIdentifier: bundleId, publicIdentifier: publicId, deviceFamily: deviceFamily, minimumOsVersion: minimumOsVersion, releaseType: HockeyApp.ReleaseType(releaseType), status: HockeyApp.DownloadStatus(status), platform: HockeyApp.Platform(platform))
         }
 
-        print("Unable to parse app json: \(String(describing: json))")
+        Log.error("Unable to parse app json: \(String(describing: json))")
         return nil
     }
 
@@ -89,7 +90,7 @@ public class HockeyParser {
             return AppVersion(id: id, version: version, mandatory: mandatory, status: HockeyApp.DownloadStatus(status), shortVersion: shortVersion, title: title)
         }
 
-        print("Unable to parse app version json: \(String(describing: json))")
+        Log.error("Unable to parse app version json: \(String(describing: json))")
         return nil
     }
 }
@@ -106,14 +107,33 @@ public class HockeyApi {
     func get(path: String, completion: ((JSON?, Error?) -> Void)? = nil) {
         let token = self.token
         asyncQueue.async {
-            KituraRequest.request(.get, "https://rink.hockeyapp.net\(path)", headers: ["X-HockeyAppToken": token, "Accept": "application/json"]).response {
+            let url = "https://rink.hockeyapp.net\(path)"
+            Log.debug("GET \(url)")
+            KituraRequest.request(.get, url, headers: ["X-HockeyAppToken": token, "Accept": "application/json"]).response {
                 request, response, data, error in
-                if let data = data {
-                    let json = JSON(data: data)
-                    completion?(json, error)
-                } else {
+                if let error = error {
                     completion?(nil, error)
+                    return
                 }
+
+                guard let response = response else {
+                    completion?(nil, NetworkError.missingResponse)
+                    return
+                }
+
+                guard response.httpStatusCode.isSuccess else {
+                    completion?(nil, NetworkError.serverError(response.httpStatusCode))
+                    return
+                }
+
+                guard let data = data else {
+                    completion?(nil, NetworkError.missingResponseBody)
+                    return
+                }
+
+
+                let json = JSON(data: data)
+                completion?(json, nil)
             }
         }
     }
@@ -121,7 +141,9 @@ public class HockeyApi {
     func getRaw(path: String, completion: ((Data?, Error?) -> Void)? = nil) {
         let token = self.token
         asyncQueue.async {
-            KituraRequest.request(.get, "https://rink.hockeyapp.net\(path)", headers: ["X-HockeyAppToken": token]).response {
+            let url = "https://rink.hockeyapp.net\(path)"
+            Log.debug("GET \(url)")
+            KituraRequest.request(.get, url, headers: ["X-HockeyAppToken": token]).response {
                 request, response, data, error in
 
                 completion?(data, error)
@@ -130,6 +152,7 @@ public class HockeyApi {
     }
 
     public func fetchApps(completion: (([HockeyApp]?, Error?) -> Void)? = nil) {
+        Log.info("Fetching all registered apps")
         get(path: "/api/2/apps") { json, error in
             if let json = json {
                 var apps = [HockeyApp]()
@@ -148,6 +171,7 @@ public class HockeyApi {
     }
 
     public func fetchAppVersions(appId: String, completion: (([AppVersion]?, Error?) -> Void)? = nil) {
+        Log.info("Fetching app versions for \(appId)")
         get(path: "/api/2/apps/\(appId)/app_versions") { json, error in
             if let json = json {
                 var versions = [AppVersion]()
@@ -166,6 +190,7 @@ public class HockeyApi {
     }
 
     public func fetchAppVersion(appId: String, versionId: Int, completion: (([AppVersion]?, Error?) -> Void)? = nil) {
+        Log.info("Fetching app version \(appId)/\(versionId)")
         get(path: "/api/2/apps/\(appId)/app_versions/\(versionId)") { json, error in
             if let json = json {
                 var versions = [AppVersion]()
@@ -184,6 +209,7 @@ public class HockeyApi {
     }
 
     public func fetchAttachment(appId: String, feedbackId: Int, attachmentId: Int, completion: @escaping (Data?, Error?) -> Void) {
+        Log.info("Fetching feedback attachment: \(appId)/\(feedbackId)/\(attachmentId)")
         let path = "/api/2/apps/\(appId)/feedback/\(feedbackId)/feedback_attachments/\(attachmentId)"
         getRaw(path: path, completion: completion)
     }
@@ -207,6 +233,7 @@ public class HockeyFacade {
     public func appVersion(appId: String, versionId: Int, completion: @escaping (AppVersion?) -> Void) {
         readWriteQueue.async {
             if let version = self.versionStore[appId]?[versionId] {
+                Log.debug("Found \(appId)/\(versionId) in cache")
                 self.completionQueue.async {
                     completion(version)
                 }
@@ -215,7 +242,7 @@ public class HockeyFacade {
 
             self.api.fetchAppVersions(appId: appId) { versions, error in
                 guard let versions = versions else {
-                    print("Unable to fetch app versions: \(error)")
+                    Log.error("Unable to fetch app versions: \(error)")
                     self.completionQueue.async {
                         completion(nil)
                     }
@@ -223,6 +250,7 @@ public class HockeyFacade {
                 }
 
                 self.readWriteQueue.async(flags: .barrier) {
+                    Log.info("Adding \(versions.count) app versions to cache")
                     var appStore = self.versionStore[appId] ?? [Int: AppVersion]()
                     for version in versions {
                         appStore[version.id] = version
