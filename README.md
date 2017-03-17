@@ -1,7 +1,7 @@
 hockey-app-hooks
 ================
 
-A simple Perfect (server-side Swift) web site to respond to HockeyApp webhooks. HockeyApp is a mobile crash reporting system: https://rink.hockeyapp.net
+A simple Kitura (server-side Swift) web site to respond to HockeyApp webhooks. HockeyApp is a mobile crash reporting system: https://rink.hockeyapp.net
 
 This web site funnels information coming from HockeyApp into Yammer.
 
