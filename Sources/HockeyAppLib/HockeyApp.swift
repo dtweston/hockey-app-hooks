@@ -1,6 +1,7 @@
 import KituraRequest
 import SwiftyJSON
 import Dispatch
+import Foundation
 
 public struct HockeyApp {
     public enum ReleaseType {
@@ -117,6 +118,17 @@ public class HockeyApi {
         }
     }
 
+    func getRaw(path: String, completion: ((Data?, Error?) -> Void)? = nil) {
+        let token = self.token
+        asyncQueue.async {
+            KituraRequest.request(.get, "https://rink.hockeyapp.net\(path)", headers: ["X-HockeyAppToken": token]).response {
+                request, response, data, error in
+
+                completion?(data, error)
+            }
+        }
+    }
+
     public func fetchApps(completion: (([HockeyApp]?, Error?) -> Void)? = nil) {
         get(path: "/api/2/apps") { json, error in
             if let json = json {
@@ -170,6 +182,11 @@ public class HockeyApi {
             completion?(nil, error)
         }
     }
+
+    public func fetchAttachment(appId: String, feedbackId: Int, attachmentId: Int, completion: @escaping (Data?, Error?) -> Void) {
+        let path = "/api/2/apps/\(appId)/feedback/\(feedbackId)/feedback_attachments/\(attachmentId)"
+        getRaw(path: path, completion: completion)
+    }
 }
 
 public class HockeyFacade {
@@ -180,6 +197,11 @@ public class HockeyFacade {
 
     public init(api: HockeyApi) {
         self.api = api
+    }
+
+    public func fetchAttachment(appId: String, feedbackId: Int, attachmentId: Int, completion: @escaping (Data?, Error?) -> Void) {
+
+        api.fetchAttachment(appId: appId, feedbackId: feedbackId, attachmentId: attachmentId, completion: completion)
     }
 
     public func appVersion(appId: String, versionId: Int, completion: @escaping (AppVersion?) -> Void) {

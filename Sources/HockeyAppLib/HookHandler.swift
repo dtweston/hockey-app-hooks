@@ -68,9 +68,40 @@ public class HookHandler {
             let version = message.versionInfo
             let more = feedbackInfo.moreInfo
 
+            var pendingAttachmentID: Int? = nil
+
+            let group = DispatchGroup()
+            if let screenshot = message.attachments.first(where: { $0.contentType.hasPrefix("image/") }) {
+
+                group.enter()
+                hockey.fetchAttachment(appId: message.appId, feedbackId: feedbackInfo.feedback.id, attachmentId: screenshot.id, completion: { data, error in
+
+                    if let error = error {
+                        print("Unable to fetch screenshot: \(error)")
+                    } else if let data = data {
+                        group.enter()
+                        self.yammer.uploadScreenshot(data: data, groupId: 9962571) { json, error in
+                            if let id = json?["id"].int {
+                                print("Received pending attachment id: \(id)")
+                                pendingAttachmentID = id
+                            }
+                            else {
+                                print("Error uploading sreenshot: \(error)")
+                            }
+
+                            group.leave()
+                        }
+                    }
+
+                    group.leave()
+                })
+            }
+
+            var appInfo = ""
+            group.enter()
             hockey.appVersion(appId: message.appId, versionId: message.appVersionId) { appVersion in
 
-                let appInfo: String = {
+                appInfo = {
                     if let appVersion = appVersion {
                         return "App: \(appVersion.title) \(appVersion.version)\n"
                     } else {
@@ -78,8 +109,13 @@ public class HookHandler {
                     }
                 }()
 
+                group.leave()
+            }
+
+            group.notify(queue: DispatchQueue.global()) {
                 let messageText = "\(feedback)\n\(appInfo)\(version)\n\(more)"
-                self.yammer.postMessage(MessagePostRequest(message: messageText, groupID: 9962571))
+
+                self.yammer.postMessage(MessagePostRequest(message: messageText, groupID: 9962571, pendingAttachmentID: pendingAttachmentID))
             }
         }
     }
