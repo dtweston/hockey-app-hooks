@@ -90,15 +90,18 @@ public class WebhookParser {
     func parseMessage(_ json: JSON) -> Message? {
         if let id = json["id"].int,
             let subject = json["subject"].string,
-            let text = json["text"].string,
-            let cleanText = json["clean_text"].string,
-            let oem = json["oem"].string,
-            let model = json["model"].string,
-            let osVersion = json["os_version"].string,
             let appId = json["app_id"].string,
-            let appVersionId = json["app_version_id"].int,
-            let name = json["name"].string,
-            let email = json["email"].string {
+            let appVersionId = json["app_version_id"].int {
+
+            let text = json["text"].string ?? ""
+            let cleanText = json["clean_text"].string ?? ""
+
+            let oem = json["oem"].string ?? ""
+            let model = json["model"].string ?? ""
+            let osVersion = json["os_version"].string ?? ""
+
+            let name = json["name"].string ?? ""
+            let email = json["email"].string ?? ""
 
             var attachments = [Attachment]()
             for (_,attachmentJson):(String, JSON) in json["attachments"] {
@@ -115,10 +118,11 @@ public class WebhookParser {
     }
 
     func parseFeedback(_ json: JSON) -> Feedback? {
-        if let name = json["name"].string,
-            let email = json["email"].string,
-            let id = json["id"].int,
-            let statusInt = json["status"].int {
+        if let id = json["id"].int {
+
+            let name = json["name"].string ?? ""
+            let email = json["email"].string ?? ""
+            let statusInt = json["status"].int ?? 0
 
             var messages = [Message]()
             for (_, messageJson):(String,JSON) in json["messages"] {

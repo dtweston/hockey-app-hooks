@@ -1,5 +1,6 @@
 import KituraRequest
 import SwiftyJSON
+import Dispatch
 
 public struct HockeyApp {
     public enum ReleaseType {
@@ -61,11 +62,12 @@ public class HockeyParser {
         if let title = json["title"].string,
             let bundleId = json["bundle_identifier"].string,
             let publicId = json["public_identifier"].string,
-            let deviceFamily = json["device_family"].string,
-            let minimumOsVersion = json["minimum_os_version"].string,
             let releaseType = json["release_type"].int,
-            let status = json["status"].int,
             let platform = json["platform"].string {
+
+            let deviceFamily = json["device_family"].string ?? ""
+            let minimumOsVersion = json["minimum_os_version"].string ?? ""
+            let status = json["status"].int ?? 0
 
             return HockeyApp(title: title, bundleIdentifier: bundleId, publicIdentifier: publicId, deviceFamily: deviceFamily, minimumOsVersion: minimumOsVersion, releaseType: HockeyApp.ReleaseType(releaseType), status: HockeyApp.DownloadStatus(status), platform: HockeyApp.Platform(platform))
         }
@@ -78,9 +80,10 @@ public class HockeyParser {
         if let version = json["version"].string,
             let id = json["id"].int,
             let mandatory = json["mandatory"].bool,
-            let status = json["status"].int,
             let shortVersion = json["shortversion"].string,
             let title = json["title"].string {
+
+            let status = json["status"].int ?? 0
 
             return AppVersion(id: id, version: version, mandatory: mandatory, status: HockeyApp.DownloadStatus(status), shortVersion: shortVersion, title: title)
         }
@@ -93,19 +96,23 @@ public class HockeyParser {
 public class HockeyApi {
     let token: String
     let parser = HockeyParser()
+    let asyncQueue = DispatchQueue(label: "com.yammer.hockey.api")
 
     public init(token: String) {
         self.token = token
     }
 
     func get(path: String, completion: ((JSON?, Error?) -> Void)? = nil) {
-        KituraRequest.request(.get, "https://rink.hockeyapp.net\(path)", headers: ["X-HockeyAppToken": token]).response {
-            request, response, data, error in
-            if let data = data {
-                let json = JSON(data: data)
-                completion?(json, error)
-            } else {
-                completion?(nil, error)
+        let token = self.token
+        asyncQueue.async {
+            KituraRequest.request(.get, "https://rink.hockeyapp.net\(path)", headers: ["X-HockeyAppToken": token, "Accept": "application/json"]).response {
+                request, response, data, error in
+                if let data = data {
+                    let json = JSON(data: data)
+                    completion?(json, error)
+                } else {
+                    completion?(nil, error)
+                }
             }
         }
     }
@@ -121,6 +128,7 @@ public class HockeyApi {
                 }
 
                 completion?(apps, error)
+                return
             }
 
             completion?(nil, error)
@@ -138,9 +146,73 @@ public class HockeyApi {
                 }
 
                 completion?(versions, error)
+                return
             }
 
             completion?(nil, error)
         }
+    }
+
+    public func fetchAppVersion(appId: String, versionId: Int, completion: (([AppVersion]?, Error?) -> Void)? = nil) {
+        get(path: "/api/2/apps/\(appId)/app_versions/\(versionId)") { json, error in
+            if let json = json {
+                var versions = [AppVersion]()
+                for (_, versionJson):(String, JSON) in json {
+                    if let version = self.parser.parseAppVersion(versionJson) {
+                        versions.append(version)
+                    }
+                }
+
+                completion?(versions, error)
+                return
+            }
+
+            completion?(nil, error)
+        }
+    }
+}
+
+public class HockeyFacade {
+    private var versionStore = [String: [Int: AppVersion]]()
+    private var readWriteQueue = DispatchQueue(label: "com.yammer.hockey.facade", attributes: .concurrent)
+    private var completionQueue = DispatchQueue(label: "com.yammer.hockey.facade.complete")
+    private let api: HockeyApi
+
+    public init(api: HockeyApi) {
+        self.api = api
+    }
+
+    public func appVersion(appId: String, versionId: Int, completion: @escaping (AppVersion?) -> Void) {
+        readWriteQueue.async {
+            if let version = self.versionStore[appId]?[versionId] {
+                self.completionQueue.async {
+                    completion(version)
+                }
+                return
+            }
+
+            self.api.fetchAppVersions(appId: appId) { versions, error in
+                guard let versions = versions else {
+                    print("Unable to fetch app versions: \(error)")
+                    self.completionQueue.async {
+                        completion(nil)
+                    }
+                    return
+                }
+
+                self.readWriteQueue.async(flags: .barrier) {
+                    var appStore = self.versionStore[appId] ?? [Int: AppVersion]()
+                    for version in versions {
+                        appStore[version.id] = version
+                    }
+
+                    self.versionStore[appId] = appStore
+                    self.completionQueue.async {
+                        completion(self.versionStore[appId]?[versionId])
+                    }
+                }
+            }
+        }
+
     }
 }
