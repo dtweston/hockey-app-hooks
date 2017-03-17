@@ -10,14 +10,26 @@ logger.format = "[(%date)] [(%type)] (%msg) [(%file):(%line) (%func)]"
 
 Log.logger = logger
 
+let configPath = "\(FileManager.default.currentDirectoryPath)/config.plist"
+Log.info("Reading config from \(configPath)")
+
+let configPlist = NSDictionary(contentsOfFile: configPath)
+
 let router = Router()
 router.all("/webhook", middleware: BodyParser())
 
-let hockeyApi = HockeyApi(token: "13b7599e2dcd4527b10bc28c34b77710")
-let yam = Yammer(token: "0criRS9Nok23Chct53mg")
+guard let hockeyToken = configPlist?["HockeyToken"] as? String,
+    let yammerToken = configPlist?["YammerToken"] as? String,
+    let yammerGroupId = configPlist?["YammerGroupId"] as? Int else {
+    Log.error("You must specify HockeyToken, YammerToken AND YammerGroupId parameters in config!")
+    exit(-15)
+}
+
+let hockeyApi = HockeyApi(token: hockeyToken)
+let yam = Yammer(token: yammerToken)
 let hockeyFacade = HockeyFacade(api: hockeyApi)
 
-let hookHandler = HookHandler(hockey: hockeyFacade, yammer: yam)
+let hookHandler = HookHandler(hockey: hockeyFacade, yammer: yam, groupId: yammerGroupId)
 
 router.get("/") {
     request, response, next in
@@ -59,7 +71,7 @@ router.post("/webhook") {
 //    }
 //}
 
-let port = 8080
+let port = configPlist?["ListenPort"] as? Int ?? 8080
 Log.info("Starting server on port \(port)")
 Kitura.addHTTPServer(onPort:port, with: router)
 

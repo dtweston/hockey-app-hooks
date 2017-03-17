@@ -43,11 +43,13 @@ extension FeedbackInfo {
 public class HookHandler {
     private let hockey: HockeyFacade
     private let yammer: Yammer
+    private let groupId: Int
     private let hookParser: WebhookParser
 
-    public init(hockey: HockeyFacade, yammer: Yammer) {
+    public init(hockey: HockeyFacade, yammer: Yammer, groupId: Int) {
         self.hockey = hockey
         self.yammer = yammer
+        self.groupId = groupId
         self.hookParser = WebhookParser()
     }
 
@@ -84,7 +86,7 @@ public class HookHandler {
                         Log.error("Unable to fetch screenshot: \(error)")
                     } else if let data = data {
                         group.enter()
-                        self.yammer.uploadScreenshot(data: data, groupId: 9962571) { json, error in
+                        self.yammer.uploadScreenshot(data: data, groupId: self.groupId) { json, error in
                             if let id = json?["id"].int {
                                 Log.debug("Received pending attachment id: \(id)")
                                 pendingAttachmentID = id
@@ -120,7 +122,7 @@ public class HookHandler {
             group.notify(queue: DispatchQueue.global()) {
                 let messageText = "\(feedback)\n\(appInfo)\(version)\n\(more)"
 
-                self.yammer.postMessage(MessagePostRequest(message: messageText, groupID: 9962571, pendingAttachmentID: pendingAttachmentID))
+                self.yammer.postMessage(MessagePostRequest(message: messageText, groupID: self.groupId, pendingAttachmentID: pendingAttachmentID))
             }
         }
     }
