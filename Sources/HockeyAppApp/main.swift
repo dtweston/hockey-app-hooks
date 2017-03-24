@@ -53,23 +53,6 @@ router.post("/webhook") {
     response.send("Thanks!")
     next()
 }
-//
-//hockeyApi.fetchApps() { apps, error in
-//    if let apps = apps {
-//        for app in apps {
-//            if app.title.contains("Yammer") {
-//                hockeyApi.fetchAppVersions(appId: app.publicIdentifier) { versions, error in
-//
-//                    if let versions = versions {
-//                        print("\(versions.count) versions found for \(app.title)")
-//                    }
-//                }
-//            }
-//        }
-//
-//        print("\(apps.count) apps found")
-//    }
-//}
 
 let port = configPlist?["ListenPort"] as? Int ?? 8080
 Log.info("Starting server on port \(port)")
