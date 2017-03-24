@@ -19,3 +19,26 @@ Setup
 5. Add the webhook to HockeyApp.
 6. Test the webhook by sending a 'PING'.
 
+Debugging
+---------
+
+A nice feature of server-side Swift is that you can use Xcode as a development environment. It's a bit clunky 
+since Xcode doesn't directly support the Swift package format, but in practice, it works fairly well:
+
+1. Generate an Xcode project with `swift package generate-xcodeproj`.
+2. Open the project: `open HockeyAppHooks.xcodeproj`
+
+Within Xcode you can set breakpoints, use lldb commands and get syntax highlighting. Go wild!
+
+The Xcode project is intentionally in the `.gitignore` file because the `Package.swift` configuration should
+be the source of truth.
+
+Todo
+----
+
+- [ ] include an @ mention for the reporting user on Yammer if we have that info
+- [ ] extend the config file for more options (support additional groups, etc.)
+- [ ] get it running permanently with a stable host name
+- [ ] build a wrapper to relaunch the app if it crashes
+- [ ] send logs somewhere (kibana?)
+- [ ] dockerize the server (dockerization?)
