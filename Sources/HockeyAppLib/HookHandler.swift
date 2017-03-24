@@ -11,11 +11,33 @@ import SwiftyJSON
 import LoggerAPI
 
 extension Message {
-    var feedbackInfo: String {
-        if text.isEmpty {
-            return "No feedback provided\n"
+    var userInfo: String {
+        if !userString.isEmpty {
+            if let userID = Int(userString) {
+                var userStr = "[[user:\(userID)]]"
+                if !name.isEmpty {
+                    userStr += " (\(name))"
+                }
+
+                return userStr
+            }
+        }
+
+        if name.isEmpty && email.isEmpty {
+            return "Yammer User"
+        } else if email.isEmpty {
+            return name
+        } else if name.isEmpty {
+            return email
         } else {
-            return "\(text)\n"
+            return "\(name) (\(email))"
+        }
+    }
+    var feedbackMessage: String {
+        if text.isEmpty {
+            return "\(userInfo) said:\nNothing of substance\n"
+        } else {
+            return "\(userInfo) said:\n\(text)\n"
         }
     }
     var versionInfo: String {
@@ -68,7 +90,7 @@ public class HookHandler {
         let feedback = feedbackInfo.feedback
         if let message = feedback.messages.first {
 
-            let feedback = message.feedbackInfo
+            let feedbackMessage = message.feedbackMessage
             let version = message.versionInfo
             let more = feedbackInfo.moreInfo
 
@@ -120,7 +142,7 @@ public class HookHandler {
             }
 
             group.notify(queue: DispatchQueue.global()) {
-                let messageText = "\(feedback)\n\(appInfo)\(version)\n\(more)"
+                let messageText = "\(feedbackMessage)\n\(appInfo)\(version)\n\(more)"
 
                 self.yammer.postMessage(MessagePostRequest(message: messageText, groupID: self.groupId, pendingAttachmentID: pendingAttachmentID))
             }

@@ -27,6 +27,7 @@ public struct Message {
     var name: String
     var email: String
     var attachments: [Attachment]
+    var userString: String
 }
 
 public struct Feedback {
@@ -111,7 +112,9 @@ public class WebhookParser {
                 }
             }
 
-            return Message(id: id, subject: subject, text: text, cleanText: cleanText, oem: oem, model: model, osVersion: osVersion, appId: appId, appVersionId: appVersionId, name: name, email: email, attachments: attachments)
+            let userString = json["user_string"].string ?? ""
+
+            return Message(id: id, subject: subject, text: text, cleanText: cleanText, oem: oem, model: model, osVersion: osVersion, appId: appId, appVersionId: appVersionId, name: name, email: email, attachments: attachments, userString: userString)
         }
 
         Log.error("Invalid message JSON: \(String(describing: json))")
