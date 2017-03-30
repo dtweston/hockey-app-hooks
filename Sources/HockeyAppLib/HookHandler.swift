@@ -9,6 +9,7 @@
 import Foundation
 import SwiftyJSON
 import LoggerAPI
+import Dispatch
 
 extension Message {
     var userInfo: String {
@@ -114,7 +115,7 @@ public class HookHandler {
                                 pendingAttachmentID = id
                             }
                             else {
-                                Log.error("Error uploading sreenshot: \(error)")
+                                Log.error("Error uploading sreenshot: \(String(describing: error))")
                             }
 
                             group.leave()

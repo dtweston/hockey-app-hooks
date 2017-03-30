@@ -13,7 +13,13 @@ Log.logger = logger
 let configPath = "\(FileManager.default.currentDirectoryPath)/config.plist"
 Log.info("Reading config from \(configPath)")
 
-let configPlist = NSDictionary(contentsOfFile: configPath)
+
+let configUrl = URL(fileURLWithPath: configPath)
+let configData = try Data(contentsOf: configUrl)
+var format = PropertyListSerialization.PropertyListFormat.xml
+let configPlist = try PropertyListSerialization.propertyList(from: configData, options: [], format: &format) as? NSDictionary
+
+//let configPlist = NSDictionary(contentsOfFile: configPath)
 
 let router = Router()
 router.all("/webhook", middleware: BodyParser())

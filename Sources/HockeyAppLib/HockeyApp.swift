@@ -242,7 +242,7 @@ public class HockeyFacade {
 
             self.api.fetchAppVersions(appId: appId) { versions, error in
                 guard let versions = versions else {
-                    Log.error("Unable to fetch app versions: \(error)")
+                    Log.error("Unable to fetch app versions: \(String(describing: error))")
                     self.completionQueue.async {
                         completion(nil)
                     }
