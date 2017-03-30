@@ -12,6 +12,17 @@ import XCTest
 class HookHandlerTests: XCTestCase {
     var message: Message!
 
+	static var allTests: [(String, (HookHandlerTests) -> () throws -> Void)] {
+		return [
+			("testYammerMentioning", testYammerMentioning),
+			("testYammerMentioningNoName", testYammerMentioningNoName),
+			("testNoYammerMentioning", testNoYammerMentioning),
+			("testNoYammerMentioningNoEmail", testNoYammerMentioningNoEmail),
+			("testNoYammerMentioningNoName", testNoYammerMentioningNoName),
+			("testNoYammerNoNothing", testNoYammerNoNothing),
+		]
+	}
+
     public override func setUp() {
         let parser = WebhookParser()
         let parsedFeedback = parser.parse(SampleData.swiftyJsonSampleData)

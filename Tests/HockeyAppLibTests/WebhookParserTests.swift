@@ -3,6 +3,12 @@ import SwiftyJSON
 @testable import HockeyAppLib
 
 class WebhookParserTests: XCTestCase {
+	static var allTests: [(String, (WebhookParserTests) -> () throws -> Void)] {
+		return [
+			("testParseFeedback", testParseFeedback)
+		]
+	}
+
     func testParseFeedback() {
 	    let parser = WebhookParser()
         let parsedFeedback = parser.parse(SampleData.swiftyJsonSampleData)
