@@ -4,29 +4,21 @@ import HockeyAppLib
 import SwiftyJSON
 import HeliumLogger
 import LoggerAPI
+import DotEnv
 
 let logger = HeliumLogger(.entry)
 logger.format = "[(%date)] [(%type)] (%msg) [(%file):(%line) (%func)]"
 
 Log.logger = logger
 
-let configPath = "\(FileManager.default.currentDirectoryPath)/config.plist"
-Log.info("Reading config from \(configPath)")
-
-
-let configUrl = URL(fileURLWithPath: configPath)
-let configData = try Data(contentsOf: configUrl)
-var format = PropertyListSerialization.PropertyListFormat.xml
-let configPlist = try PropertyListSerialization.propertyList(from: configData, options: [], format: &format) as? NSDictionary
-
-//let configPlist = NSDictionary(contentsOfFile: configPath)
+let env = DotEnv(withFile: ".env")
 
 let router = Router()
 router.all("/webhook", middleware: BodyParser())
 
-guard let hockeyToken = configPlist?["HockeyToken"] as? String, !hockeyToken.isEmpty,
-    let yammerToken = configPlist?["YammerToken"] as? String, !yammerToken.isEmpty,
-    let yammerGroupId = configPlist?["YammerGroupId"] as? Int, yammerGroupId != 0 else {
+guard let hockeyToken = env["HOCKEYAPP_TOKEN"], !hockeyToken.isEmpty,
+    let yammerToken = env["YAMMER_TOKEN"], !yammerToken.isEmpty,
+    let yammerGroupId = env.getAsInt("YAMMER_GROUP_ID"), yammerGroupId != 0 else {
     Log.error("You must specify HockeyToken, YammerToken AND YammerGroupId parameters in config!")
     exit(-15)
 }
@@ -60,7 +52,7 @@ router.post("/webhook") {
     next()
 }
 
-let port = configPlist?["ListenPort"] as? Int ?? 8080
+let port = env.getAsInt("APP_PORT") ?? 8080
 Log.info("Starting server on port \(port)")
 Kitura.addHTTPServer(onPort:port, with: router)
 
