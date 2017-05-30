@@ -11,10 +11,10 @@ Setup
 -----
 
 1. Clone the repo
-2. `swift build`
-3. Edit the `config.plist` file (in the root of the repo) to add `HockeyToken` and `YammerToken`.
-4. Run `./.build/debug/HockeyAppHooks`
-5. The app looks for `config.plist` in the current directory.
+2. `swift build -c release`
+3. `cp env.template .env` and edit to add Yammer/HockeyApp tokens
+4. Run `./.build/release/HockeyAppHooks`
+5. The app looks for `.env` in the current directory.
 4. In another terminal... `ngrok [ListenPort]`.
 5. Add the webhook to HockeyApp.
 6. Test the webhook by sending a 'PING'.
@@ -36,7 +36,7 @@ be the source of truth.
 Todo
 ----
 
-- [ ] include an @ mention for the reporting user on Yammer if we have that info
+- [x] include an @ mention for the reporting user on Yammer if we have that info
 - [ ] extend the config file for more options (support additional groups, etc.)
 - [ ] get it running permanently with a stable host name
 - [ ] build a wrapper to relaunch the app if it crashes
